@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>net.devk</groupId>
+		<artifactId>admission-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+
+	<artifactId>ear</artifactId>
+	<packaging>ear</packaging>
+
+	<name>ear assembly</name>
+
+	<properties>
+		<postgresql.version>42.2.14.jre7</postgresql.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>net.devk</groupId>
+			<artifactId>patient-ejb</artifactId>
+			<type>ejb</type>
+		</dependency>
+		<dependency>
+			<groupId>net.devk</groupId>
+			<artifactId>admission-api</artifactId>
+			<type>war</type>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${postgresql.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-ear-plugin</artifactId>
+				<!-- <configuration> <archive> <manifest> <addClasspath>true</addClasspath> 
+					</manifest> </archive> </configuration> -->
+				<configuration>
+					<applicationName>${project.artifactId}</applicationName>
+					<version>7</version>
+					<outputFileNameMapping>@{artifactId}@@{dashClassifier?}@.@{extension}@</outputFileNameMapping>
+					<generateApplicationXml>true</generateApplicationXml>
+					<defaultJavaBundleDir>lib/</defaultJavaBundleDir>
+					<skinnyWars>true</skinnyWars>
+					<initializeInOrder>true</initializeInOrder>
+					<modules>
+						<ejbModule>
+							<groupId>net.devk</groupId>
+							<artifactId>patient-ejb</artifactId>
+						</ejbModule>
+						<webModule>
+							<groupId>net.devk</groupId>
+							<artifactId>admission-api</artifactId>
+						</webModule>
+					</modules>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<profiles>
+		<profile>
+			<id>wildfly-embedded</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.wildfly.plugins</groupId>
+						<artifactId>wildfly-maven-plugin</artifactId>
+						<configuration>
+							<!-- <java-opts> <java-opt>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</java-opt> 
+								</java-opts> -->
+							<add-user>
+								<users>
+									<user>
+										<username>admin</username>
+										<password>admin.1234</password>
+										<application-user>false</application-user>
+									</user>
+									<user>
+										<username>admin-user</username>
+										<password>user.1234</password>
+										<groups>
+											<group>admin</group>
+											<group>user</group>
+										</groups>
+										<application-user>true</application-user>
+									</user>
+									<user>
+										<username>default-user</username>
+										<password>user.1234</password>
+										<groups>
+											<group>user</group>
+										</groups>
+										<application-user>true</application-user>
+									</user>
+								</users>
+							</add-user>
+						</configuration>
+						<executions>
+							<!-- Undeploy the application on clean -->
+							<execution>
+								<id>undeploy</id>
+								<phase>clean</phase>
+								<goals>
+									<goal>undeploy</goal>
+								</goals>
+								<configuration>
+									<ignoreMissingDeployment>true</ignoreMissingDeployment>
+								</configuration>
+							</execution>
+
+							<!-- Deploy the JDBC library -->
+							<execution>
+								<id>deploy-driver</id>
+								<phase>install</phase>
+								<configuration>
+									<groupId>org.postgresql</groupId>
+									<artifactId>postgresql</artifactId>
+									<name>postgresql.jar</name>
+								</configuration>
+								<goals>
+									<goal>deploy-artifact</goal>
+								</goals>
+							</execution>
+							<execution>
+								<id>add-datasource</id>
+								<phase>install</phase>
+								<configuration>
+									<address>subsystem=datasources,data-source=myDatasource</address>
+									<resources>
+										<resource>
+											<!-- <enableResource>true</enableResource> -->
+											<properties>
+												<connection-url>jdbc:postgresql://localhost/sample</connection-url>
+												<jndi-name>java:jboss/myDatasource</jndi-name>
+												<enabled>true</enabled>
+												<enable>true</enable>
+												<user-name>postgres</user-name>
+												<password>postgres</password>
+												<driver-name>postgresql.jar</driver-name>
+												<use-ccm>false</use-ccm>
+											</properties>
+										</resource>
+									</resources>
+								</configuration>
+								<goals>
+									<goal>add-resource</goal>
+								</goals>
+							</execution>
+							<!-- Deploy the application on install -->
+							<execution>
+								<id>deploy</id>
+								<phase>install</phase>
+								<goals>
+									<goal>deploy</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+</project>
