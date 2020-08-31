@@ -20,11 +20,172 @@
 			<artifactId>javaee-api</artifactId>
 			<scope>provided</scope>
 		</dependency>
+
+		<!-- Needed for jaxrs tests that use ClientBuilder to connect from a client 
+			to the JAX-RS server. -->
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-client</artifactId>
+			<version>3.0.19.Final</version>
+			<scope>test</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jaxb-provider</artifactId>
+			<version>3.0.19.Final</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-json-p-provider</artifactId>
+			<version>3.0.19.Final</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.jboss.resteasy</groupId>
+			<artifactId>resteasy-jackson-provider</artifactId>
+			<version>3.0.19.Final</version>
+			<scope>test</scope>
+		</dependency>
+
 	</dependencies>
 
 
 	<modules>
 		<module>admission-api</module>
 	</modules>
+
+	<profiles>
+		<profile>
+			<id>wildfly-test</id>
+
+			<properties>
+				<serverProfile>standalone-full.xml</serverProfile>
+				<!-- <serverRoot>${project.build.directory}/wildfly-${wildfly.version}</serverRoot> -->
+				<jboss.home>${project.build.directory}/wildfly-${wildfly.version}</jboss.home>
+				<!-- Client-cert needs complicated cert setup, which hasn't been done -->
+				<skipServletClientCertificate>true</skipServletClientCertificate>
+			</properties>
+
+			<dependencies>
+
+				<!-- Needed for websocket tests that use ContainerProvider.getWebSocketContainer() 
+					to connect from a the client to the websocket server. -->
+				<dependency>
+					<groupId>io.undertow</groupId>
+					<artifactId>undertow-websockets-jsr</artifactId>
+					<version>1.4.0.Final</version>
+					<scope>test</scope>
+				</dependency>
+
+				<!-- Without this exception will be thrown about missing tracef method -->
+				<dependency>
+					<groupId>org.jboss.logging</groupId>
+					<artifactId>jboss-logging</artifactId>
+					<version>3.4.1.Final</version>
+					<scope>test</scope>
+				</dependency>
+
+				<!-- The actual Arquillian container (server connector) -->
+				<dependency>
+					<groupId>org.wildfly.arquillian</groupId>
+					<artifactId>wildfly-arquillian-container-managed</artifactId>
+					<version>2.2.0.Final</version>
+					<scope>test</scope>
+				</dependency>
+			</dependencies>
+			<build>
+				<testResources>
+					<testResource>
+						<directory>src/test/resources</directory>
+						<filtering>true</filtering>
+					</testResource>
+				</testResources>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<configuration>
+							<skip>${maven.test.skip}</skip>
+						</configuration>
+						<executions>
+							<execution>
+								<id>unpack</id>
+								<phase>process-test-classes</phase>
+								<goals>
+									<goal>unpack</goal>
+								</goals>
+								<configuration>
+									<artifactItems>
+										<artifactItem>
+											<groupId>org.wildfly</groupId>
+											<artifactId>wildfly-dist</artifactId>
+											<version>${wildfly.version}</version>
+											<type>zip</type>
+											<overWrite>false</overWrite>
+											<outputDirectory>${project.build.directory}</outputDirectory>
+										</artifactItem>
+										<artifactItem>
+											<groupId>org.keycloak</groupId>
+											<artifactId>keycloak-wildfly-adapter-dist</artifactId>
+											<version>${keycloak.version}</version>
+											<type>zip</type>
+											<outputDirectory>${project.build.directory}/wildfly-${wildfly.version}</outputDirectory>
+										</artifactItem>
+										<artifactItem>
+											<groupId>org.keycloak</groupId>
+											<artifactId>keycloak-saml-wildfly-adapter-dist</artifactId>
+											<version>${keycloak.version}</version>
+											<type>zip</type>
+											<outputDirectory>${project.build.directory}/wildfly-${wildfly.version}</outputDirectory>
+										</artifactItem>
+									</artifactItems>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>install-adapters</id>
+								<phase>process-test-classes</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+									<target name="run">
+										<exec
+											dir="${project.build.directory}/wildfly-${version.wildfly}/bin"
+											executable="${jboss-cli.executable}" inputstring="">
+											<arg value="--file=adapter-install-offline.cli" />
+										</exec>
+									</target>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+					<plugin>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<environmentVariables>
+								<JBOSS_HOME>${jboss.home}</JBOSS_HOME>
+							</environmentVariables>
+							<systemPropertyVariables>
+								<arquillian.launch>wildfly</arquillian.launch>
+							</systemPropertyVariables>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
+
 </project>
 

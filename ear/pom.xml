@@ -71,14 +71,71 @@
 	<profiles>
 		<profile>
 			<id>wildfly-embedded</id>
+			<properties>
+				<wildfly.home>${env.WILDFLY_HOME}</wildfly.home>
+			</properties>
 			<build>
 				<plugins>
+					<!-- <plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-dependency-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>unpack</id>
+								<phase>install</phase>
+								<goals>
+									<goal>unpack</goal>
+								</goals>
+								<configuration>
+									<artifactItems>
+										<artifactItem>
+											<groupId>org.keycloak</groupId>
+											<artifactId>keycloak-wildfly-adapter-dist</artifactId>
+											<version>${keycloak.version}</version>
+											<type>zip</type>
+											<outputDirectory>${project.build.directory}/wildfly-${wildfly.version}</outputDirectory>
+										</artifactItem>
+										<artifactItem>
+											<groupId>org.keycloak</groupId>
+											<artifactId>keycloak-saml-wildfly-adapter-dist</artifactId>
+											<version>${keycloak.version}</version>
+											<type>zip</type>
+											<outputDirectory>${project.build.directory}/wildfly-${wildfly.version}</outputDirectory>
+										</artifactItem>
+									</artifactItems>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin> -->
+					<!-- <plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-antrun-plugin</artifactId>
+						<version>1.8</version>
+						<executions>
+							<execution>
+								<id>install-adapters</id>
+								<phase>install</phase>
+								<goals>
+									<goal>run</goal>
+								</goals>
+								<configuration>
+								<tasks>
+									<property name="wildfly.home" value="${project.build.directory}/wildfly-${wildfly.version}/bin"/>
+									<ant antfile="../keycload-adapter-installer.xml" >
+										<target name="${ant-target}" />
+									</ant>
+								</tasks>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin> -->
 					<plugin>
 						<groupId>org.wildfly.plugins</groupId>
 						<artifactId>wildfly-maven-plugin</artifactId>
 						<configuration>
 							<!-- <java-opts> <java-opt>-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005</java-opt> 
 								</java-opts> -->
+							<jbossHome>${wildfly.home}</jbossHome>
 							<add-user>
 								<users>
 									<user>
@@ -105,10 +162,12 @@
 									</user>
 								</users>
 							</add-user>
+							<port>7770</port>
+							<startupTimeout>600</startupTimeout>
 						</configuration>
 						<executions>
 							<!-- Undeploy the application on clean -->
-							<execution>
+							<!-- <execution>
 								<id>undeploy</id>
 								<phase>clean</phase>
 								<goals>
@@ -117,7 +176,7 @@
 								<configuration>
 									<ignoreMissingDeployment>true</ignoreMissingDeployment>
 								</configuration>
-							</execution>
+							</execution> -->
 
 							<!-- Deploy the JDBC library -->
 							<execution>
@@ -171,4 +230,6 @@
 			</build>
 		</profile>
 	</profiles>
+	<!-- <tasks> <exec dir="${project.build.directory}/wildfly-${wildfly.version}/bin" 
+		executable="${jboss-cli.executable}" inputstring=""> </exec> </tasks> -->
 </project>

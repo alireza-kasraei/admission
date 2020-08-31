@@ -1,0 +1,1 @@
+all security configs are located in keycloak.json

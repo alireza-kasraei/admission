@@ -1,0 +1,17 @@
+<project>
+
+	<target name="install-adapter-unix">
+		<echo>installing keycloak adapter for unix in ${wildfly.home}</echo>
+		<exec dir="${wildfly.home}" executable="jboss-cli.sh">
+			<arg line="--file=adapter-install-offline.cli" />
+		</exec>
+	</target>
+
+	<target name="install-adapter-windows">
+		<echo>installing keycloak adapter for windows in ${wildfly.home}</echo>
+		<exec dir="${wildfly.home}" executable="cmd">
+			<arg line="/C jboss-cli.bat --file=adapter-install-offline.cli" />
+		</exec>
+	</target>
+
+</project>
